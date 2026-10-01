@@ -89,41 +89,45 @@ void mostrar_matriz(double *A, int n)
 int main(int argc, char **argv) {
     
     int id_proceso, cantidad_procesos, root = 0;
-    int n = 3 ;//dimension de las matrices
+    int n ;//dimension de las matrices
+    double *A;
+    FILE *archivo;
+    char *nombre_archivo= "matriz_100.txt";
 
-
-    double m1[] = {25, 15, -5,
-                   15, 18,  0,
-                   -5,  0, 11}; // tomar la matriz como un arreglo y hacer aritmetica de indices para poder usarla, ULTRA RECOMENDABLE PARA HPC, por asignar REALMENTE un espacio contiguo ROW-MAJOR 
-    // double m2 = []
-    
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &id_proceso);
     MPI_Comm_size(MPI_COMM_WORLD, &cantidad_procesos);
 
+    if(id_proceso == root) //obtenemos la dimension de la matriz que se guarda en la primera linea del txt que genera el script
+    {
+        archivo = fopen(nombre_archivo, "r");
+        fscanf(archivo, "%d", &n);
+    }
+
+    MPI_Bcast(&n,1, MPI_INT, root, MPI_COMM_WORLD); //comunicamos a todos la dimension de la matriz
+    A = (double *)calloc(n*n, sizeof(double));    
+
+    if(id_proceso == root)//obtenemos la matriz, que solo lo hace el proceso 0 
+    {
+        for (int i=0; i < (n*n); i++)
+        {
+            fscanf(archivo, "%lf", &A[i]);
+        }
+        fclose(archivo);
+    }
+
+    MPI_Bcast(A,n*n, MPI_DOUBLE, root, MPI_COMM_WORLD); //comunicamos la matriz a todos los procesos 
     
-    cholesky_paralelo(m1, n,id_proceso, cantidad_procesos);
+
+    cholesky_paralelo(A, n,id_proceso, cantidad_procesos);
 
      
     if (id_proceso == root)
     {
-        mostrar_matriz(m1, n);
+        mostrar_matriz(A, n);
         printf("\n");
     }
+    
     MPI_Finalize();
-   
-    // free(c1); //liberamos lo que se reservo dentro de la funcion
-
-    // n = 4;
-    // double m2[] = {18, 22,  54,  42,
-    //                22, 70,  86,  62,
-    //                54, 86, 174, 134,
-    //                42, 62, 134, 106};
-    // cholesky_paralelo(m2, n,id_proceso, cantidad_procesos);
-    // if (id_proceso == root)
-    // {
-    //     mostrar_matriz(m2, n);
-    //     printf("\n");
-    // }
     return 0;
 }
