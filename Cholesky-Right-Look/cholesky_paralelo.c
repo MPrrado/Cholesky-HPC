@@ -16,7 +16,10 @@ void cholesky_paralelo(double *A, int n, int id_proceso, int cantidad_procesos) 
         int id_duenio = (k % cantidad_procesos);
         if (id_proceso == id_duenio)
         {
+            //elemento de la diagonal de la columna k
             buffer[k] = (A[k*n+k] = sqrt(A[k*n + k])); //asignacion en cadena a = (b = c) primero b = c y luego lo que tiene b se asigna a a
+
+            //resto de elementos debajo de la diagonal 
             for (int i=k+1; i < n; i++)
             {
                 buffer[i] = A[i*n + k] = (double) A[i*n + k] / buffer[k];
@@ -24,8 +27,17 @@ void cholesky_paralelo(double *A, int n, int id_proceso, int cantidad_procesos) 
         }
 
         /*
+            En el caso de que la columna que ese esta analizando no le corresponda al proceso con id id_proceso
+            se esperara que toque su ejecucion y termine sus calculos correspondiente para que le llegue el mensaje de la columna y asi poder avanzar
+        */
+
+        MPI_Bcast(buffer, n, MPI_DOUBLE, id_duenio, MPI_COMM_WORLD);
+
+        /*
             Hago la copia de la columna ya final dentro de la memoria de cada proceso, asi logramos mantener la matriz L actualizada en todos los procesos
             me ahorro de usar MPI_Gather().
+            Esto lo hacemos por que sino cada proceso solo tendra las columnas que les corresponde con las restas de las sumatorias aplicadas y cada proceso tendria una version
+            erronea de la matriz L.
         */
         for (int i=k; i < n; i++)
         {
@@ -77,7 +89,7 @@ void mostrar_matriz(double *A, int n)
 int main(int argc, char **argv) {
     
     int id_proceso, cantidad_procesos, root = 0;
-    int n;//dimension de las matrices
+    int n = 3 ;//dimension de las matrices
 
 
     double m1[] = {25, 15, -5,
@@ -85,8 +97,20 @@ int main(int argc, char **argv) {
                    -5,  0, 11}; // tomar la matriz como un arreglo y hacer aritmetica de indices para poder usarla, ULTRA RECOMENDABLE PARA HPC, por asignar REALMENTE un espacio contiguo ROW-MAJOR 
     // double m2 = []
     
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &id_proceso);
+    MPI_Comm_size(MPI_COMM_WORLD, &cantidad_procesos);
 
-    cholesky_paralelo(A, n,id_proceso, cantidad_procesos);
+    
+    cholesky_paralelo(m1, n,id_proceso, cantidad_procesos);
+
+     
+    if (id_proceso == root)
+    {
+        mostrar_matriz(m1, n);
+        printf("\n");
+    }
+    MPI_Finalize();
    
     // free(c1); //liberamos lo que se reservo dentro de la funcion
 
