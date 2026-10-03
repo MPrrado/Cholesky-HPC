@@ -3,6 +3,60 @@
 #include <math.h>
 #include <mpi.h>
 
+void cholesky_paralelo(double *A, int n, int id_proceso, int cantidad_procesos);
+void mostrar_matriz(double *A, int n); 
+
+
+int main(int argc, char **argv) {
+    
+    int id_proceso, cantidad_procesos, root = 0;
+    int n ;//dimension de las matrices
+    double *A;
+    FILE *archivo;
+    char *nombre_archivo = argv[1];
+
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &id_proceso);
+    MPI_Comm_size(MPI_COMM_WORLD, &cantidad_procesos);
+
+    if(id_proceso == root) //obtenemos la dimension de la matriz que se guarda en la primera linea del txt que genera el script
+    {
+        archivo = fopen(nombre_archivo, "r");
+        fscanf(archivo, "%d", &n);
+    }
+
+    MPI_Bcast(&n,1, MPI_INT, root, MPI_COMM_WORLD); //comunicamos a todos la dimension de la matriz
+    A = (double *)calloc(n*n, sizeof(double));    
+
+    if(id_proceso == root)//obtenemos la matriz, que solo lo hace el proceso 0 
+    {
+        for (int i=0; i < (n*n); i++)
+        {
+            fscanf(archivo, "%lf", &A[i]);
+        }
+        fclose(archivo);
+    }
+
+    MPI_Bcast(A,n*n, MPI_DOUBLE, root, MPI_COMM_WORLD); //comunicamos la matriz a todos los procesos 
+
+    MPI_Barrier(MPI_COMM_WORLD);// ponemos barreras para esperar que todos hagan sus calculos y esperen aqui
+    double tiempo_inicio = MPI_Wtime(); // aqui comienzan los calculos por lo que comenzamos a contar desde aqui
+
+    cholesky_paralelo(A, n,id_proceso, cantidad_procesos);
+
+    MPI_Barrier(MPI_COMM_WORLD);
+    double tiempo_fin = MPI_Wtime(); 
+
+    if(id_proceso == root)
+    {
+        printf("%d,%d,%f\n", n, cantidad_procesos, tiempo_fin - tiempo_inicio);
+    }
+   
+    MPI_Finalize();
+    return 0;
+}
+
+
 void cholesky_paralelo(double *A, int n, int id_proceso, int cantidad_procesos) {
 
     /*
@@ -84,53 +138,4 @@ void mostrar_matriz(double *A, int n)
             }
         printf("\n");
     }
-}
-
-int main(int argc, char **argv) {
-    
-    int id_proceso, cantidad_procesos, root = 0;
-    int n ;//dimension de las matrices
-    double *A;
-    FILE *archivo;
-    char *nombre_archivo = argv[1];
-
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &id_proceso);
-    MPI_Comm_size(MPI_COMM_WORLD, &cantidad_procesos);
-
-    if(id_proceso == root) //obtenemos la dimension de la matriz que se guarda en la primera linea del txt que genera el script
-    {
-        archivo = fopen(nombre_archivo, "r");
-        fscanf(archivo, "%d", &n);
-    }
-
-    MPI_Bcast(&n,1, MPI_INT, root, MPI_COMM_WORLD); //comunicamos a todos la dimension de la matriz
-    A = (double *)calloc(n*n, sizeof(double));    
-
-    if(id_proceso == root)//obtenemos la matriz, que solo lo hace el proceso 0 
-    {
-        for (int i=0; i < (n*n); i++)
-        {
-            fscanf(archivo, "%lf", &A[i]);
-        }
-        fclose(archivo);
-    }
-
-    MPI_Bcast(A,n*n, MPI_DOUBLE, root, MPI_COMM_WORLD); //comunicamos la matriz a todos los procesos 
-
-    MPI_Barrier(MPI_COMM_WORLD);// ponemos barreras para esperar que todos hagan sus calculos y esperen aqui
-    double tiempo_inicio = MPI_Wtime(); // aqui comienzan los calculos por lo que comenzamos a contar desde aqui
-
-    cholesky_paralelo(A, n,id_proceso, cantidad_procesos);
-
-    MPI_Barrier(MPI_COMM_WORLD);
-    double tiempo_fin = MPI_Wtime(); 
-
-    if(id_proceso == root)
-    {
-        printf("%d,%d,%f\n", n, cantidad_procesos, tiempo_fin - tiempo_inicio);
-    }
-   
-    MPI_Finalize();
-    return 0;
 }
