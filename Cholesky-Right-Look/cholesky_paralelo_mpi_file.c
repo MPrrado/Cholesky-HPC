@@ -45,6 +45,8 @@ int main(int argc, char **argv) {
     MPI_File archivo_binario; //se declara una variable tipo archivo mpi
 
     //se abre dicho archivo de nombre "nombre_archivo" variable que se pasa por parametro cuando se ejecuta. "archivo_binario" es el archivo binario el cual sera mapeado a la matriz A
+    MPI_Barrier(MPI_COMM_WORLD);
+    double tiempo_inicio = MPI_Wtime(); 
     MPI_File_open(MPI_COMM_WORLD, nombre_archivo, MPI_MODE_RDONLY, MPI_INFO_NULL, &archivo_binario);
     
     // se realiza la lectura de todo el documento pero cada proceso lee solamente en su offset correspondiente previamente calculado
@@ -94,8 +96,6 @@ int main(int argc, char **argv) {
     free(conteos_recepcion);
     free(desplazamientos);
 
-    MPI_Barrier(MPI_COMM_WORLD);
-    double tiempo_inicio = MPI_Wtime(); 
 
     cholesky_paralelo(A, n, id_proceso, cantidad_procesos);
 

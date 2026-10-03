@@ -19,6 +19,8 @@ int main(int argc, char **argv) {
     MPI_Comm_rank(MPI_COMM_WORLD, &id_proceso);
     MPI_Comm_size(MPI_COMM_WORLD, &cantidad_procesos);
 
+    MPI_Barrier(MPI_COMM_WORLD);// ponemos barreras para esperar que todos hagan sus calculos y esperen aqui
+    double tiempo_inicio = MPI_Wtime(); // aqui comienzan los calculos por lo que comenzamos a contar desde aqui
     if(id_proceso == root) //obtenemos la dimension de la matriz que se guarda en la primera linea del txt que genera el script
     {
         archivo = fopen(nombre_archivo, "r");
@@ -39,8 +41,6 @@ int main(int argc, char **argv) {
 
     MPI_Bcast(A,n*n, MPI_DOUBLE, root, MPI_COMM_WORLD); //comunicamos la matriz a todos los procesos 
 
-    MPI_Barrier(MPI_COMM_WORLD);// ponemos barreras para esperar que todos hagan sus calculos y esperen aqui
-    double tiempo_inicio = MPI_Wtime(); // aqui comienzan los calculos por lo que comenzamos a contar desde aqui
 
     cholesky_paralelo(A, n,id_proceso, cantidad_procesos);
 
