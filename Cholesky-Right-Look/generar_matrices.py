@@ -11,6 +11,7 @@ def generar_matriz_spd(n, nombre_archivo):
     
     # sumar a la diagonal garantiza que sea estrictamente definida positiva
     # garantiza que la matriz sea invertible, es decir que su determinante no sea 0
+    # gracias a que hace que sus valores propios tiendan a ser positivos
     A += np.eye(n) * 1e-3 
 
 
