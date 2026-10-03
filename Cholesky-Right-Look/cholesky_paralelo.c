@@ -92,7 +92,7 @@ int main(int argc, char **argv) {
     int n ;//dimension de las matrices
     double *A;
     FILE *archivo;
-    char *nombre_archivo= "matriz_100.txt";
+    char *nombre_archivo = argv[1];
 
     MPI_Init(&argc, &argv);
     MPI_Comm_rank(MPI_COMM_WORLD, &id_proceso);
@@ -117,17 +117,20 @@ int main(int argc, char **argv) {
     }
 
     MPI_Bcast(A,n*n, MPI_DOUBLE, root, MPI_COMM_WORLD); //comunicamos la matriz a todos los procesos 
-    
+
+    MPI_Barrier(MPI_COMM_WORLD);// ponemos barreras para esperar que todos hagan sus calculos y esperen aqui
+    double tiempo_inicio = MPI_Wtime(); // aqui comienzan los calculos por lo que comenzamos a contar desde aqui
 
     cholesky_paralelo(A, n,id_proceso, cantidad_procesos);
 
-     
-    if (id_proceso == root)
+    MPI_Barrier(MPI_COMM_WORLD);
+    double tiempo_fin = MPI_Wtime(); 
+
+    if(id_proceso == root)
     {
-        mostrar_matriz(A, n);
-        printf("\n");
+        printf("%d,%d,%f\n", n, cantidad_procesos, tiempo_fin - tiempo_inicio);
     }
-    
+   
     MPI_Finalize();
     return 0;
 }
