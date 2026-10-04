@@ -1,4 +1,5 @@
 import numpy as np
+import sys
 
 def generar_matriz_spd(n, nombre_archivo):
     print(f"Generando matriz de {n}x{n}...")
@@ -27,7 +28,6 @@ def generar_matriz_spd(n, nombre_archivo):
     print(f"{nombre_archivo} completado\n")
 
 
-
-dimension = 100
+dimension = int(sys.argv[1]) if len(sys.argv) > 1 else 100
 nombre_matriz = f'matriz_{dimension}.txt'
 generar_matriz_spd(dimension, nombre_matriz)
