@@ -3,6 +3,7 @@
 # Nombre del archivo ejecutable y del CSV de salida
 EJECUTABLE_TXT="./cholesky_paralelo"
 EJECUTABLE_BIN="./cholesky_paralelo_mpi_file"
+SCRIPT_PYTHON="../Cholesky-Bloques/cholesky.py"
 ARCHIVO_CSV_TXT="resultados_cholesky_txt.csv"
 ARCHIVO_CSV_BIN="resultados_cholesky_bin.csv"
 
@@ -19,8 +20,10 @@ NUCLEOS=(8)
 # Cantidad de repeticiones para calcular la mediana posteriormente
 REPETICIONES=10
 
-# Inicializar el archivo CSV con la cabecera
-echo "dimension_matriz,numero_de_nucleos,tiempo" > $ARCHIVO_CSV_TXT
+# Inicializar el archivo CSV con la cabecera (solo si no existe, para no borrar resultados anteriores)
+if [ ! -f $ARCHIVO_CSV_TXT ]; then
+    echo "dimension_matriz,numero_de_nucleos,tiempo" > $ARCHIVO_CSV_TXT
+fi
 
 # Bucle principal
 for dim in "${DIMENSIONES[@]}"; do
@@ -49,8 +52,10 @@ for dim in "${DIMENSIONES[@]}"; do
     done
 done
 
-# Inicializar el archivo CSV con la cabecera
-echo "dimension_matriz,numero_de_nucleos,tiempo" > $ARCHIVO_CSV_BIN
+# Inicializar el archivo CSV con la cabecera (solo si no existe, para no borrar resultados anteriores)
+if [ ! -f $ARCHIVO_CSV_BIN ]; then
+    echo "dimension_matriz,numero_de_nucleos,tiempo" > $ARCHIVO_CSV_BIN
+fi
 echo "--------------------------------------------------------------------------------------------------"
 echo $'\n\nCHOLESKY CON LECTURA PARALELA\n\n'
 
@@ -80,5 +85,21 @@ for dim in "${DIMENSIONES[@]}"; do
     done
 done
 
+echo "--------------------------------------------------------------------------------------------------"
+echo $'\n\nCHOLESKY EN PYTHON\n\n'
+ 
+for dim in "${DIMENSIONES[@]}"; do
+    echo "Iniciando pruebas para matriz de ${dim}x${dim}..." >&2
+ 
+    for p in "${NUCLEOS[@]}"; do
+        echo "  -> Ejecutando con $p núcleo(s)..." >&2
+ 
+        # El script de Python genera la matriz en memoria y hace las repeticiones por dentro.
+        # Guarda los tiempos en resultados_paralelo.csv (obtener_medianas.py lo pasa al mismo formato que los de C)
+        mpirun -n $p python3 $SCRIPT_PYTHON --paralelo --N $dim --reps $REPETICIONES > /dev/null
+        echo " Listo" >&2
+    done
+done
+ 
 python3 obtener_medianas.py
 echo "Todas las pruebas finalizaron. Resultados guardados en los archivos ..._mediana.csv" >&2
