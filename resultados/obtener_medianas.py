@@ -44,13 +44,13 @@ def procesar_csv(archivo_entrada, archivo_salida):
     print(f"¡Listo! Resultados guardados en {archivo_salida}\n")
 
 
-# Python: primero lo pasamos al formato de C
-if os.path.exists("resultados_paralelo.csv"):
-    convertir_python("resultados_paralelo.csv", "resultados_cholesky_python.csv")
+# # Python: primero lo pasamos al formato de C
+# if os.path.exists("resultados_paralelo.csv"):
+#     convertir_python("resultados_paralelo.csv", "resultados_cholesky_python.csv")
 
 # Medianas de los tres
-for nombre in ["resultados_cholesky_txt", "resultados_cholesky_bin", "resultados_cholesky_python"]:
-    if os.path.exists(f"{nombre}.csv"):
+for nombre in ["resultados_cholesky_txt", "resultados_cholesky_bin"]:
+    if os.path.exists(f"resultados/{nombre}.csv"):
         procesar_csv(f"{nombre}.csv", f"{nombre}_mediana.csv")
     else:
         print(f"No se encontró {nombre}.csv, se omite.\n")
