@@ -1,32 +1,17 @@
 import os
+import glob
 import pandas as pd
 
-
-def convertir_python(archivo_python, archivo_salida):
-    """cholesky.py guarda UNA fila por (N, procesos) con todos los tiempos juntos en la
-    columna 'tiempos_s', separados por ';'  (ej: "0.52;0.51;0.53").
-    Esta función la pasa al mismo formato que los CSV de C: una fila por repetición
-        dimension_matriz,numero_de_nucleos,tiempo"""
-    print(f"Convirtiendo {archivo_python}...")
-    df = pd.read_csv(archivo_python)
-    df = df[df["version"] == "paralelizado"]                       # Solo las corridas paralelas
-
-    filas = []
-    for _, fila in df.iterrows():
-        for t in str(fila["tiempos_s"]).split(";"):                # Separamos los tiempos de cada repetición
-            filas.append({"dimension_matriz": int(fila["N"]),
-                          "numero_de_nucleos": int(fila["p"]),
-                          "tiempo": float(t)})
-
-    pd.DataFrame(filas).to_csv(archivo_salida, index=False)
-    print(f"¡Listo! Guardado en {archivo_salida}\n")
+# Carpeta donde está este script (resultados/): así funciona sin importar desde dónde se ejecute
+CARPETA = os.path.dirname(os.path.abspath(__file__))
 
 
 def procesar_csv(archivo_entrada, archivo_salida):
-    print(f"Procesando {archivo_entrada}...")
+    print(f"Procesando {os.path.basename(archivo_entrada)}...")
 
     # 1. Cargar los datos crudos (una fila por repetición)
     df = pd.read_csv(archivo_entrada)
+    df = df.dropna(subset=["tiempo"])                              # descartamos corridas que fallaron (sin tiempo)
 
     # 2. Agrupar por (dimensión, núcleos) y calcular la mediana del tiempo
     grupos = df.groupby(["dimension_matriz", "numero_de_nucleos"])
@@ -41,16 +26,11 @@ def procesar_csv(archivo_entrada, archivo_salida):
 
     # 5. Exportar
     df_mediana.to_csv(archivo_salida, index=False)
-    print(f"¡Listo! Resultados guardados en {archivo_salida}\n")
+    print(f"¡Listo! Resultados guardados en {os.path.basename(archivo_salida)}\n")
 
 
-# # Python: primero lo pasamos al formato de C
-# if os.path.exists("resultados_paralelo.csv"):
-#     convertir_python("resultados_paralelo.csv", "resultados_cholesky_python.csv")
-
-# Medianas de los tres
-for nombre in ["resultados_cholesky_txt", "resultados_cholesky_bin"]:
-    if os.path.exists(f"resultados/{nombre}.csv"):
-        procesar_csv(f"{nombre}.csv", f"{nombre}_mediana.csv")
-    else:
-        print(f"No se encontró {nombre}.csv, se omite.\n")
+# Procesa TODOS los CSV crudos de esta carpeta (serial, txt, bin, scalapack, de PC y de cluster)
+for archivo in sorted(glob.glob(os.path.join(CARPETA, "resultados_cholesky_*.csv"))):
+    if archivo.endswith("_mediana.csv"):
+        continue
+    procesar_csv(archivo, archivo.replace(".csv", "_mediana.csv"))
