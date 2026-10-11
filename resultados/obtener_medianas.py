@@ -2,8 +2,6 @@ import os
 import glob
 import pandas as pd
 
-# Carpeta donde está este script (resultados/): así funciona sin importar desde dónde se ejecute
-CARPETA = os.path.dirname(os.path.abspath(__file__))
 
 
 def procesar_csv(archivo_entrada, archivo_salida):
@@ -26,11 +24,12 @@ def procesar_csv(archivo_entrada, archivo_salida):
 
     # 5. Exportar
     df_mediana.to_csv(archivo_salida, index=False)
-    print(f"¡Listo! Resultados guardados en {os.path.basename(archivo_salida)}\n")
+    print(f"¡Listo! Resultados guardados en {archivo_salida}\n")
 
 
-# Procesa TODOS los CSV crudos de esta carpeta (serial, txt, bin, scalapack, de PC y de cluster)
-for archivo in sorted(glob.glob(os.path.join(CARPETA, "resultados_cholesky_*.csv"))):
-    if archivo.endswith("_mediana.csv"):
-        continue
-    procesar_csv(archivo, archivo.replace(".csv", "_mediana.csv"))
+# Medianas de los tres
+for nombre in ["resultados/resultados_cholesky_txt", "resultados/resultados_cholesky_bin","resultados/resultados_cholesky_scalapack", "resultados/resultados_cholesky_serial"]:
+    if os.path.exists(f"{nombre}.csv"):
+        procesar_csv(f"{nombre}.csv", f"{nombre}_mediana.csv")
+    else:
+        print(f"No se encontró {nombre}.csv, se omite.\n")
